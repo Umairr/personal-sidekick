@@ -31,6 +31,8 @@ So I rebuilt it as something I'd want to use every day:
   against your own "done when…" line and sends it back to try again (up to 3 times) if it falls short.
 - **Tools I actually needed.** Live currency conversion (I think in PKR) and calendar events I can
   double-click to add.
+- **Any model, not one vendor.** OpenAI, Anthropic, Google, Groq, Ollama, OpenRouter or any
+  OpenAI-compatible server. Switching is one line in `.env`.
 
 ## What it can do
 
@@ -46,6 +48,27 @@ So I rebuilt it as something I'd want to use every day:
 
 🔒 Needs approval: `write_file`, `append_file`, `edit_file`, `create_directory`, `move_file`,
 `copy_file`, `create_calendar_event`, `send_push_notification`.
+
+## Choosing a model
+
+Set `SIDEKICK_MODEL` in `.env` as `provider:model`, and add that provider's API key. That's it.
+
+| Provider | Example `SIDEKICK_MODEL` | Key |
+|---|---|---|
+| OpenAI | `openai:gpt-5.4-mini` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic:claude-opus-5-5` (or `claude-sonnet-5-5`, `claude-haiku-5-5`) | `ANTHROPIC_API_KEY` |
+| Google | `google_genai:gemini-2.5-flash` | `GOOGLE_API_KEY` |
+| Groq | `groq:llama-3.3-70b-versatile` | `GROQ_API_KEY` |
+| Ollama (local, free) | `ollama:qwen3:14b` | none |
+| OpenRouter (hundreds of models) | `openrouter:anthropic/claude-sonnet-5.5` | `OPENROUTER_API_KEY` |
+| Any OpenAI-compatible server | `openai:<model>` + `SIDEKICK_BASE_URL` | `SIDEKICK_API_KEY` |
+
+The evaluator uses the same model unless you set `SIDEKICK_EVALUATOR_MODEL`. A cheaper model is
+usually fine for grading. Pick a model that's good at tool calling: the Sidekick makes a lot of
+tool calls, and small local models can struggle with the browser.
+
+Google, Groq and Ollama support is optional: `uv sync --extra google --extra groq --extra ollama`
+(or `--all-extras`). OpenAI and Anthropic are installed by default.
 
 ## How it works
 
@@ -75,12 +98,13 @@ shows a card. Your decision (`approve`, `edit`, `reject` or `respond`) is sent b
 ## Run it locally
 
 **You need:** Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 20+ (the MCP servers run
-through `npx`), and API keys for OpenAI, Serper and Pushover.
+through `npx`), an API key for your model provider, a Serper key for search, and optionally
+Pushover for phone notifications.
 
 ```bash
 git clone https://github.com/<your-username>/personal-sidekick.git
 cd personal-sidekick
-cp .env.example .env        # add your keys
+cp .env.example .env        # pick a model, add its key
 uv sync
 uv run server.py
 ```
@@ -139,7 +163,7 @@ front for HTTPS. The Sidekick keeps its session in memory and drives a browser, 
 long-lived machine, not a fleet of short-lived containers.
 
 > ⚠️ **Always set `SIDEKICK_PASSWORD` before exposing it.** Anyone who can open the page can spend
-> your OpenAI credits, send you notifications and drive a browser from your server.
+> your API credits, send you notifications and drive a browser from your server.
 
 ### 1. Launch the instance
 
@@ -230,17 +254,20 @@ cd personal-sidekick && git pull && docker compose -f docker-compose.yml -f dock
 ### Rough monthly cost
 
 A `t3.medium` on demand is roughly **$30/month** in most regions, plus storage and data transfer.
-Stopping the instance when you're not using it brings that down a lot. OpenAI usage is separate;
-with `gpt-5.4-mini`, a typical errand costs cents.
+Stopping the instance when you're not using it brings that down a lot. Model usage is billed
+separately by your provider; with a small model, a typical errand costs cents.
 
 ## Configuration
 
 | Variable | Default | What it does |
 |---|---|---|
-| `OPENAI_API_KEY` | — | Required |
+| `SIDEKICK_MODEL` | `openai:gpt-5.4-mini` | Model as `provider:model` (see *Choosing a model*) |
+| `SIDEKICK_EVALUATOR_MODEL` | same as above | Model that grades answers |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, … | — | Key for the provider you picked |
+| `SIDEKICK_BASE_URL`, `SIDEKICK_API_KEY` | — | Any OpenAI-compatible endpoint |
+| `SIDEKICK_MAX_TOKENS` | provider default | Cap on output tokens per model call |
 | `SERPER_API_KEY` | — | Required for web search |
 | `PUSHOVER_USER`, `PUSHOVER_TOKEN` | — | Push notifications |
-| `SIDEKICK_MODEL` | `gpt-5.4-mini` | Model for both the worker and the evaluator |
 | `SIDEKICK_PORT` | `8765` | Preferred port; the next free one is used if it's taken |
 | `SIDEKICK_HOST` | `127.0.0.1` | `0.0.0.0` in Docker |
 | `SIDEKICK_USERNAME`, `SIDEKICK_PASSWORD` | — | Turns on HTTP Basic auth for every page except `/healthz` |
@@ -254,6 +281,7 @@ personal-sidekick/
 ├── server.py              FastAPI app: streaming run/resume, status, files, auth, port fallback
 ├── sidekick/
 │   ├── agent.py           the agent, approval rules, evaluator loop, event stream
+│   ├── models.py          "provider:model" → any LangChain chat model
 │   └── tools.py           MCP sessions, ready-made tools, my own tools
 ├── web/                   index.html · styles.css · app.js (no build step, no framework)
 ├── sandbox/               the only folder the agent can write to (git-ignored)

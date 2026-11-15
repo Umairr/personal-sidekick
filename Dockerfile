@@ -31,7 +31,7 @@ RUN npm init -y >/dev/null \
 # Python dependencies first, so code changes don't reinstall them
 WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --all-extras --no-install-project
 
 COPY . .
 

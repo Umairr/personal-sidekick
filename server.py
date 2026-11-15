@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
 from sidekick import Sidekick  # noqa: E402
+from sidekick.agent import EVALUATOR_MODEL, MODEL  # noqa: E402
 
 ROOT = Path(__file__).parent
 SANDBOX = ROOT / "sandbox"
@@ -129,6 +130,8 @@ async def status():
         "ready": app_state.ready,
         "error": app_state.error,
         "busy": app_state.lock.locked(),
+        "model": MODEL,
+        "evaluator_model": EVALUATOR_MODEL,
         "pending": sk.pending if sk else [],
         "tools": sk.tool_catalog() if sk and app_state.ready else [],
         "project": os.getenv("LANGSMITH_PROJECT") if os.getenv("LANGSMITH_TRACING") == "true" else None,

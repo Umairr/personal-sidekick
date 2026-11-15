@@ -70,6 +70,10 @@ async function pollStatus() {
     if (!s.ready) { setPill("booting", "Starting browser…"); setTimeout(pollStatus, 1200); return; }
     state.ready = true;
     renderTools(s.tools);
+    if (s.model) {
+      $("#brand-sub").textContent = `personal co-worker · ${s.model}`;
+      $("#brand-sub").title = `Evaluator: ${s.evaluator_model}`;
+    }
     if (s.project) {
       const a = $("#trace-link");
       a.href = "https://smith.langchain.com/";

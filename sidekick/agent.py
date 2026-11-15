@@ -21,14 +21,15 @@ from langchain.agents.middleware import (
     TodoListMiddleware,
 )
 from langchain_core.messages import AIMessage, ToolMessage
-from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from .models import build_model, build_structured, model_spec
 from .tools import get_all_tools
 
-MODEL = os.getenv("SIDEKICK_MODEL", "gpt-5.4-mini")
+MODEL = model_spec()
+EVALUATOR_MODEL = model_spec("SIDEKICK_EVALUATOR_MODEL", fallback=MODEL)
 MAX_ATTEMPTS = 3
 
 # Filesystem MCP tools that change something on disk, plus my own file-writing tool
@@ -130,7 +131,7 @@ class Sidekick:
         self.gated = sorted(interrupt_on)
 
         self.worker = create_agent(
-            model=f"openai:{MODEL}",
+            model=build_model(MODEL),
             tools=self.tools,
             system_prompt=f"{WORKER_PROMPT}\nToday is {datetime.now():%A %d %B %Y}.",
             middleware=[
@@ -142,7 +143,7 @@ class Sidekick:
             ],
             checkpointer=self.memory,
         )
-        self.evaluator = ChatOpenAI(model=MODEL).with_structured_output(EvaluatorOutput)
+        self.evaluator = build_structured(EVALUATOR_MODEL, EvaluatorOutput)
 
     async def cleanup(self):
         if self.sessions:
