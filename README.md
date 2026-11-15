@@ -8,7 +8,7 @@ It doesn't act on its own when the stakes are real. Anything that writes to disk
 notification waits for my approval. When it hits a login page or a captcha, it stops and asks me
 to step in.
 
-<!-- Add a screenshot of the UI here: docs/screenshot.png -->
+![Sidekick pausing for approval before writing a file](docs/screenshots/02-approval.png)
 
 ---
 
@@ -48,6 +48,32 @@ So I rebuilt it as something I'd want to use every day:
 
 🔒 Needs approval: `write_file`, `append_file`, `edit_file`, `create_directory`, `move_file`,
 `copy_file`, `create_calendar_event`, `send_push_notification`.
+
+## Screenshots
+
+A real run: *find today's gold price, convert it to PKR and AED, and save a note.*
+
+**1. Ready for an errand.** Presets on the left, the full toolbelt below (🔒 marks the tools that
+need approval).
+
+![Home screen](docs/screenshots/01-home.png)
+
+**2. It pauses before writing the file.** The plan is on the right. Every step so far is on the
+timeline, and the exact file content waits in *Needs you* for Approve, Edit or Reject.
+
+![Approval card for write_file](docs/screenshots/02-approval.png)
+
+**3. Done and checked.** Expand any step to see its arguments and result. The evaluator confirms
+that the success criteria were met.
+
+![Finished task with evaluator verdict](docs/screenshots/03-result.png)
+
+<table>
+  <tr>
+    <td width="70%"><b>Light mode</b> follows your system setting.<br/><br/><img src="docs/screenshots/04-light.png" alt="Light mode" /></td>
+    <td width="30%"><b>Phone</b><br/><br/><img src="docs/screenshots/05-mobile.png" alt="Mobile layout" /></td>
+  </tr>
+</table>
 
 ## Choosing a model
 
