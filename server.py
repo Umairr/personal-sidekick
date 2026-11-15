@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import socket
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -152,7 +153,22 @@ async def file(path: str):
     return FileResponse(target, filename=target.name)
 
 
+def find_free_port(start: int, attempts: int = 50) -> int:
+    """Return `start` if it is free, otherwise the next free port after it."""
+    for port in range(start, start + attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"No free port between {start} and {start + attempts - 1}")
+
+
 if __name__ == "__main__":
-    port = int(os.getenv("SIDEKICK_PORT", "8765"))
+    wanted = int(os.getenv("SIDEKICK_PORT", "8765"))
+    port = find_free_port(wanted)
+    if port != wanted:
+        print(f"\n  Port {wanted} is already in use, using {port} instead.")
     print(f"\n  Sidekick → http://localhost:{port}\n")
     uvicorn.run(app, host="127.0.0.1", port=port)
