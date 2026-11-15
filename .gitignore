@@ -1,4 +1,7 @@
+# secrets: keep every .env file out of git, except the template
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 *.pyc
