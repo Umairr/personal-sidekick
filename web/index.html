@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sidekick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c5cff'/><path d='M9 17l5 5 9-12' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M9 17l5 5 9-12" /></svg>
+      </div>
+      <div>
+        <div class="brand-name">Sidekick</div>
+        <div class="brand-sub">personal co-worker · LangGraph</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a id="trace-link" class="ghost-link" target="_blank" rel="noopener" hidden>LangSmith ↗</a>
+      <span id="status-pill" class="pill pill-booting"><span class="dot"></span><span class="label">Starting browser…</span></span>
+      <button id="reset-btn" class="btn btn-ghost" title="Close the browser and start a fresh session">Reset</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: composer, toolbelt, files -->
+    <aside class="col col-left">
+      <section class="card composer">
+        <div class="card-title">New mission</div>
+        <label class="field">
+          <span>What should I do?</span>
+          <textarea id="message" rows="5" placeholder="e.g. Sign in to my Expedia account, then find the cheapest return flight Karachi → Dubai for next weekend…"></textarea>
+        </label>
+        <label class="field">
+          <span>Done when…</span>
+          <textarea id="criteria" rows="3" placeholder="e.g. Top 3 options with price in PKR, saved to flights.md, and a push notification sent"></textarea>
+        </label>
+        <div class="presets" id="presets"></div>
+        <button id="go-btn" class="btn btn-primary" disabled>
+          <span>Launch</span><kbd>⌘ ↵</kbd>
+        </button>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Toolbelt <span id="tool-count" class="count"></span></div>
+        <div id="toolbelt" class="toolbelt"><div class="muted small">Loading tools…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Sandbox files <button id="files-refresh" class="icon-btn" title="Refresh">↻</button></div>
+        <ul id="files" class="files"><li class="muted small">Nothing yet</li></ul>
+      </section>
+    </aside>
+
+    <!-- CENTER: live feed -->
+    <section class="col col-center">
+      <div id="feed" class="feed">
+        <div class="empty" id="empty">
+          <div class="empty-orb"></div>
+          <h1>Give me an errand.</h1>
+          <p>I can drive a real browser, search the web, write files to my sandbox, convert currencies, make calendar events, and ping your phone. Anything that touches your files or your phone waits for your OK.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: inbox + plan -->
+    <aside class="col col-right">
+      <section class="card inbox" id="inbox-card">
+        <div class="card-title">Needs you <span id="inbox-count" class="count"></span></div>
+        <div id="inbox"><div class="muted small">Approvals and login requests show up here.</div></div>
+      </section>
+      <section class="card">
+        <div class="card-title">Plan</div>
+        <div class="progress"><div id="plan-bar" class="progress-bar"></div></div>
+        <ol id="plan" class="plan"><li class="muted small">The Sidekick writes its plan here as it works.</li></ol>
+      </section>
+    </aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
