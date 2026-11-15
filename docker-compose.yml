@@ -1,0 +1,14 @@
+services:
+  sidekick:
+    build: .
+    image: personal-sidekick:latest
+    env_file: .env
+    environment:
+      SIDEKICK_HOST: 0.0.0.0
+      SIDEKICK_PORT: 8765
+    ports:
+      - "${SIDEKICK_PUBLISH_PORT:-8765}:8765"
+    volumes:
+      - ./sandbox:/app/sandbox
+    shm_size: 1gb          # Chromium needs more shared memory than Docker's 64MB default
+    restart: unless-stopped

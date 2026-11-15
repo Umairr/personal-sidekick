@@ -119,19 +119,43 @@ def make_calendar_tool(sandbox: str):
 
 # --------------------------------------------------------------------------- MCP servers
 
+PLAYWRIGHT_MCP = "@playwright/mcp@0.0.85"
+FILESYSTEM_MCP = "@modelcontextprotocol/server-filesystem@2.3.0"
+
+
+def _flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes"}
+
+
 def mcp_connections(sandbox: str) -> dict:
-    """A headed Playwright browser and a filesystem server locked to the sandbox."""
+    """A Playwright browser and a filesystem server locked to the sandbox.
+
+    Locally the servers run through npx and the browser window is visible.
+    In Docker, MCP_BIN_DIR points at preinstalled binaries and the browser runs headless."""
+    browser_args = ["--isolated"]
+    if _flag("SIDEKICK_HEADLESS"):
+        browser_args.append("--headless")
+    if os.getenv("SIDEKICK_BROWSER"):
+        browser_args += ["--browser", os.environ["SIDEKICK_BROWSER"]]
+    if _flag("SIDEKICK_NO_SANDBOX"):
+        browser_args.append("--no-sandbox")
+
+    bin_dir = os.getenv("MCP_BIN_DIR")
+    if bin_dir:
+        playwright = {"command": os.path.join(bin_dir, "playwright-mcp"), "args": browser_args}
+        filesystem = {"command": os.path.join(bin_dir, "mcp-server-filesystem"), "args": [sandbox]}
+    else:
+        playwright = {"command": "npx", "args": ["-y", PLAYWRIGHT_MCP, *browser_args]}
+        filesystem = {"command": "npx", "args": ["-y", FILESYSTEM_MCP, sandbox]}
+
+    # MCP stdio servers only inherit a minimal environment (PATH, HOME…), so pass the
+    # browser location explicitly when it is set (it is, in the Docker image)
+    if os.getenv("PLAYWRIGHT_BROWSERS_PATH"):
+        playwright["env"] = {"PLAYWRIGHT_BROWSERS_PATH": os.environ["PLAYWRIGHT_BROWSERS_PATH"]}
+
     return {
-        "playwright": {
-            "transport": "stdio",
-            "command": "npx",
-            "args": ["@playwright/mcp@latest", "--isolated"],
-        },
-        "filesystem": {
-            "transport": "stdio",
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-filesystem", sandbox],
-        },
+        "playwright": {"transport": "stdio", **playwright},
+        "filesystem": {"transport": "stdio", **filesystem},
     }
 
 

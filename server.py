@@ -1,7 +1,9 @@
 """Web server for the Sidekick. Run with:  uv run server.py   then open http://localhost:8765"""
 
 import asyncio
+import base64
 import json
+import secrets
 import os
 import socket
 from contextlib import asynccontextmanager
@@ -12,8 +14,8 @@ from dotenv import load_dotenv
 load_dotenv(override=True)  # must run before LangChain is imported, or tracing stays off
 
 import uvicorn  # noqa: E402
-from fastapi import FastAPI, HTTPException  # noqa: E402
-from fastapi.responses import FileResponse, StreamingResponse  # noqa: E402
+from fastapi import FastAPI, HTTPException, Request  # noqa: E402
+from fastapi.responses import FileResponse, Response, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
@@ -55,6 +57,33 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Personal Sidekick", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=WEB), name="static")
+
+# Optional password protection. Always set it when the app is reachable from the internet:
+# anyone who can open the page can spend your API credits and drive the browser.
+AUTH_USER = os.getenv("SIDEKICK_USERNAME", "")
+AUTH_PASSWORD = os.getenv("SIDEKICK_PASSWORD", "")
+
+
+@app.middleware("http")
+async def basic_auth(request: Request, call_next):
+    if not AUTH_PASSWORD or request.url.path == "/healthz":
+        return await call_next(request)
+    header = request.headers.get("authorization", "")
+    if header.lower().startswith("basic "):
+        try:
+            user, _, password = base64.b64decode(header[6:]).decode().partition(":")
+        except Exception:
+            user, password = "", ""
+        if secrets.compare_digest(user, AUTH_USER or user) and secrets.compare_digest(password, AUTH_PASSWORD):
+            return await call_next(request)
+    return Response("Authentication required", status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Sidekick"'})
+
+
+@app.get("/healthz")
+async def healthz():
+    """Liveness check for Docker and AWS load balancers (no auth, no secrets)."""
+    return {"ok": True, "ready": app_state.ready}
 
 
 class RunRequest(BaseModel):
@@ -153,12 +182,12 @@ async def file(path: str):
     return FileResponse(target, filename=target.name)
 
 
-def find_free_port(start: int, attempts: int = 50) -> int:
+def find_free_port(start: int, host: str = "127.0.0.1", attempts: int = 50) -> int:
     """Return `start` if it is free, otherwise the next free port after it."""
     for port in range(start, start + attempts):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind(("127.0.0.1", port))
+                s.bind((host, port))
                 return port
             except OSError:
                 continue
@@ -166,9 +195,12 @@ def find_free_port(start: int, attempts: int = 50) -> int:
 
 
 if __name__ == "__main__":
+    host = os.getenv("SIDEKICK_HOST", "127.0.0.1")  # Docker sets 0.0.0.0
     wanted = int(os.getenv("SIDEKICK_PORT", "8765"))
-    port = find_free_port(wanted)
+    port = find_free_port(wanted, host)
     if port != wanted:
         print(f"\n  Port {wanted} is already in use, using {port} instead.")
+    if host != "127.0.0.1" and not AUTH_PASSWORD:
+        print("\n  WARNING: listening on a public interface without SIDEKICK_PASSWORD set.")
     print(f"\n  Sidekick → http://localhost:{port}\n")
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    uvicorn.run(app, host=host, port=port)
